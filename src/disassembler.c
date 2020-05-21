@@ -22,7 +22,15 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)   {
         case 0x06: printf("MVI    B,#$%02x", code[1]); opbytes=2; break;
         case 0x07: printf("RLC"); break;
         case 0x08: printf("NOP"); break;
-        /* ........ */
+        case 0x09: printf("DAD    B"); break;
+        case 0x0a: printf("LDAX   B"); break;
+        case 0x0b: printf("DCX    B"); break;
+        case 0x0c: printf("INR    C"); break;
+        case 0x0d: printf("DCR    C"); break;
+        case 0x0e: printf("MVI    C,#$%02x", code[1]); break;
+        case 0x0f: printf("RRC"); break;
+        case 0x10: printf("NOP"); break;
+
         case 0x3e: printf("MVI    A,#0x%02x", code[1]); opbytes = 2; break;
         /* ........ */
         case 0xc3: printf("JMP    $%02x%02x",code[2],code[1]); opbytes = 3; break;
@@ -36,11 +44,11 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)   {
 
 
 int main(int argc, char * argv[]) {
-	FILE *f = fopen(argv[1], "rb");
-	if (f==NULL) {
+    FILE *f = fopen(argv[1], "rb");
+    if (f==NULL) {
         printf("error: Couldn't open %s\n", argv[1]);
         exit(1);
-	}
+    }
 
     //Get the file size and read it into a memory buffer
     fseek(f, 0L, SEEK_END);
@@ -53,12 +61,12 @@ int main(int argc, char * argv[]) {
     fclose(f);
 
     int pc = 0;
-	f = NULL;
+    f = NULL;
 
     while (pc < fsize)
     {
         pc += Disassemble8080Op(buffer, pc);
     }
     free(buffer);
-	return 0;
+    return 0;
 }
