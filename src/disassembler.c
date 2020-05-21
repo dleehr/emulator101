@@ -6,8 +6,8 @@
    */
 
 #include <stdio.h>
-   int Disassemble8080Op(unsigned char *codebuffer, int pc)
-   {
+#include <stdlib.h>
+int Disassemble8080Op(unsigned char *codebuffer, int pc)   {
     unsigned char *code = &codebuffer[pc];
     int opbytes = 1;
     printf ("%04x ", pc);
@@ -32,9 +32,33 @@
     printf("\n");
 
     return opbytes;
-   }
+}
 
-   int main(int argc, char * argv[]) {
-   	printf("hello, world\n");
-   	return 0;
-   }
+
+int main(int argc, char * argv[]) {
+	FILE *f = fopen(argv[1], "rb");
+	if (f==NULL) {
+        printf("error: Couldn't open %s\n", argv[1]);
+        exit(1);
+	}
+
+    //Get the file size and read it into a memory buffer
+    fseek(f, 0L, SEEK_END);
+    int fsize = ftell(f);
+    fseek(f, 0L, SEEK_SET);
+
+    unsigned char *buffer=malloc(fsize);
+
+    fread(buffer, fsize, 1, f);
+    fclose(f);
+
+    int pc = 0;
+	f = NULL;
+
+    while (pc < fsize)
+    {
+        pc += Disassemble8080Op(buffer, pc);
+    }
+    free(buffer);
+	return 0;
+}
