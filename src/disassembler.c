@@ -30,6 +30,30 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)   {
         case 0x0e: printf("MVI    C,#$%02x", code[1]); break;
         case 0x0f: printf("RRC"); break;
         case 0x10: printf("NOP"); break;
+        case 0x11: printf("LXI    D,#$%02x%02x", code[2], code[1]); opbytes=3; break;
+        case 0x12: printf("STAX   D"); break;
+        case 0x13: printf("INX    D"); break;
+        case 0x14: printf("INR    D"); break;
+        case 0x15: printf("DCR    D"); break;
+        case 0x16: printf("MVI    D,#$%02x", code[1]); opbytes = 2; break;
+        case 0x17: printf("RAL"); break;
+        case 0x18: printf("NOP"); break;
+        case 0x19: printf("DAD    D"); break;
+        case 0x1a: printf("LDAX   D"); break;
+        case 0x1b: printf("DCX    D"); break;
+        case 0x1c: printf("INR    E"); break;
+        case 0x1d: printf("DCR    E"); break;
+        case 0x1e: printf("MVI    E,#$%02x", code[1]); opbytes = 2; break;
+        case 0x1f: printf("RAR"); break;
+        case 0x20: printf("NOP"); break;
+        case 0x21: printf("LXI    H,#$%02x%02x", code[2], code[1]); opbytes = 3; break;
+        case 0x22: printf("SHLD   #$%02x%02x", code[2], code[1]); opbytes = 3; break;
+        case 0x23: printf("INX    H"); break;
+        case 0x24: printf("INR    H"); break;
+        case 0x25: printf("DCR    H"); break;
+        case 0x26: printf("MVI    H,#$%02x", code[1]); opbytes = 2; break;
+        // Should I do this by hand? or write a python script?
+
 
         case 0x3e: printf("MVI    A,#0x%02x", code[1]); opbytes = 2; break;
         /* ........ */

@@ -27,3 +27,11 @@ On most modern platforms, these policies are made by engineers and published in 
 Knowing the ABI can also aid you in debugging code when you don't have the source. The ABI will define the location of the parameters to functions, so when you stop at some arbitrary subroutine you can look in those locations to see what is being passed around.
 
 
+## disassembling
+
+The 8080 has registers named A, B, C, D, E, H, and L. There is also a program counter (PC) and a dedicated stack pointer (SP).
+
+Some instructions work on registers in pairs: B and C is a pair, as is DE, and HL.
+
+HL is special, and is used as the address any time data is read or written to memory.
+
