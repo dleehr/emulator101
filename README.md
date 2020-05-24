@@ -35,3 +35,26 @@ Some instructions work on registers in pairs: B and C is a pair, as is DE, and H
 
 HL is special, and is used as the address any time data is read or written to memory.
 
+
+## Debugging
+
+`gdb` requires to be code signed on macOS now, since it attaches to other processes.
+
+So instead I'm using `clang` in my Makefile and `lldb` to debug
+
+- https://aaronbloomfield.github.io/pdr/docs/lldb_summary.html
+
+Setting a breakpoint:
+
+Still `b Disassemble8080Op` (name of function), then `run invaders/invaders.h`
+
+Use `n` to step to next line, `p *code` to print that variable.
+
+In gdb, `p /x *code` prints out the hex representation of the character in `*code`.
+
+In lldb, use
+
+```
+frame variable --format x *code
+(unsigned char) *code = 0xc3
+```
