@@ -58,3 +58,8 @@ In lldb, use
 frame variable --format x *code
 (unsigned char) *code = 0xc3
 ```
+
+## disassembling 2
+
+The first instructions match what we hand assembled before. After that, you can see some new instructions. I pasted the hex data in below for reference. Notice that if you compare the memory with the instructions, it looks like the addresses are stored backward in memory. They are. This is called little endian - little endian machines like the 8080 store the smaller bytes of numbers in memory first. (See below for more on endian-ness)
+
