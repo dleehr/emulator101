@@ -2,12 +2,13 @@
 #include <stdlib.h>
 
 typedef struct ConditionCodes {
-    uint8_t     z:1;    // I assume these numbers after the colon are the number of bits
-    uint8_t     s:1;
-    uint8_t     p:1;
-    uint8_t     cy:1;
-    uint8_t     ac:1;
-    uint8_t     pad:3;
+    // These use bit fields: https://www.tutorialspoint.com/cprogramming/c_bit_fields.htm
+    uint8_t     z:1;    // Z (zero) set to 1 when the result is equal to zero
+    uint8_t     s:1;    // S (sign) set to 1 when bit 7 (the most significant bit or MSB) of the math instruction is set
+    uint8_t     p:1;    // P (parity) is set when the answer has even parity, clear when odd parity
+    uint8_t     cy:1;   // CY (carry) set to 1 when the instruction resulted in a carry out or borrow into the high order bit
+    uint8_t     ac:1;   // AC (auxillary carry) is used mostly for BCD (binary coded decimal) math. Read the data book for more details, Space Invaders doesn't use it.
+    uint8_t     pad:3;  // empty to fill out the rest of the 8 bits of the struct
 } ConditionCodes;
 
 typedef struct State8080 {
