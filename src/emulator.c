@@ -32,6 +32,11 @@ void UnimplementedInstruction(State8080* state) {
     exit(1);
 }
 
+uint8_t Parity(uint8_t value) {
+    // TODO: Implement this
+    return 0;
+}
+
 void Emulate8080Op(State8080* state) {
     // pull the opcode.
     // state is a pointer to the state struct, so state->pc is the value of the pc
@@ -61,6 +66,71 @@ void Emulate8080Op(State8080* state) {
         case 0x43:  //MOV B,E
             state->b = state->e;
             break;
+        case 0x80:  { //ADD B
+            // do the math with higher precision so we can capture the carry out
+            uint16_t answer = (uint16_t) state->a + (uint16_t) state->b;
+            // Zero flag: if the result is zero, set the flag
+            // otherwise clear the flag
+            if ((answer & 0xff) == 0) { // we AND with 0xff because we are emulating 8-bit math
+                state->cc.z = 1;
+            } else {
+                state->cc.z = 0;
+            }
+            // Sign flag: if 7th bit is set, set the flag
+            // otherwise clear the flag
+            if (answer & 0x80) {
+                state->cc.s = 1;
+            } else {
+                state->cc.s = 0;
+            }
+            // Carry flag: if answer is greater than 255, set the flag
+            // otherwise, clear the flag
+            if (answer > 0xff) {
+                state->cc.cy = 1;
+            } else {
+                state->cc.cy = 0;
+            }
+            // Parity handled by subroutine
+            state->cc.p = Parity( answer & 0xff);
+
+            // Remember, we have to put the result in a single byte
+            state->a = answer & 0xff;
+            break;
+        }
+        case 0x81: {     //ADD C
+            // More concise code for setting flags
+            uint16_t answer = (uint16_t) state->a + (uint16_t) state->c;
+            state->cc.z = ((answer & 0xff) == 0); // z if result was zero
+            state->cc.s = ((answer & 0x80) != 0); // s if sign bit
+            state->cc.cy = (answer > 0xff); // cy if carry
+            state->cc.p = Parity(answer & 0xff); // p if Parity
+            state->a = answer & 0xff; // store 8 bit result
+            break;
+        }
+        case 0x86: {    //ADD M
+            // Memory form
+            // In the memory form, the addend is the byte pointed to by the address stored in the HL register pair.
+            // Piece together the 16-bit address. lower part is in l, upper part is in h
+            // shift up the h by 8 positions and then logically OR it with the l to get one 16-bit value
+            uint16_t offset = (state->h<<8) | (state->l);
+            uint16_t answer = (uint16_t) state->a + state->memory[offset];
+            state->cc.z = ((answer & 0xff) == 0);
+            state->cc.s = ((answer & 0x80) != 0);
+            state->cc.cy = (answer > 0xff);
+            state->cc.p = Parity(answer & 0xff);
+            state->a = answer & 0xff;
+            break;
+        }
+        case 0xc6: {     //ADI byte
+            // Immediate form
+            uint16_t answer = (uint16_t) state->a + (uint16_t) opcode[1];
+            state->cc.z = ((answer & 0xff) == 0); // z if result was zero
+            state->cc.s = ((answer & 0x80) != 0); // s if sign bit
+            state->cc.cy = (answer > 0xff); // cy if carry
+            state->cc.p = Parity(answer & 0xff); // p if Parity
+            state->a = answer & 0xff; // store 8 bit result
+            break;
+        }
         case 0xfe:  UnimplementedInstruction(state); break;
         case 0xff:  UnimplementedInstruction(state); break;
     }
