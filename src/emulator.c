@@ -40,12 +40,26 @@ void Emulate8080Op(State8080* state) {
     unsigned char *opcode = &state->memory[state->pc];
 
     switch(*opcode) {
-        case 0x00:  UnimplementedInstruction(state); break;
-        case 0x01:  UnimplementedInstruction(state); break;
+        case 0x00: // NOP
+            break;
+        case 0x01: // LXI B,D16
+            state->c = opcode[1];   // Loading BC with 2 bytes direct
+            state->b = opcode[2];   // Due to endianness, c <- 1, b <- 2
+            state->pc += 2; //increment by 2 because of 2 byte direct value
+            break;
         case 0x02:  UnimplementedInstruction(state); break;
         case 0x03:  UnimplementedInstruction(state); break;
         case 0x04:  UnimplementedInstruction(state); break;
         /* ... */
+        case 0x41:  //MOV B,C
+            state->b = state->c;
+            break;
+        case 0x42:  //MOV B,D
+            state->b = state->d;
+            break;
+        case 0x43:  //MOV B,E
+            state->b = state->e;
+            break;
         case 0xfe:  UnimplementedInstruction(state); break;
         case 0xff:  UnimplementedInstruction(state); break;
     }
