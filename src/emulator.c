@@ -121,6 +121,23 @@ void Emulate8080Op(State8080* state) {
             state->a = answer & 0xff;
             break;
         }
+        case 0xc2: {    // JNZ Address - jump to 16 bit address if not zero
+            if (0 == state->cc.z) {
+                // Remember, high byte is opcode[2] and low byte is opcode[1]
+                state->pc = (opcode[2] << 8) | opcode[1];
+                // But after the case we'll add 1 to pc. do we need to subtract that?
+            } else {
+                // branch not taken
+                // Increment pc since we used opcode[2] and opcode[1]
+                state->pc += 2;
+            }
+            break;
+        }
+        case 0xc3: {    //JMP address
+            // Unconditional, so we just update the pc and don't need to +2 the pc
+            state->pc = (opcode[2] << 8) | opcode[1];
+            break;
+        }
         case 0xc6: {     //ADI byte
             // Immediate form
             uint16_t answer = (uint16_t) state->a + (uint16_t) opcode[1];
@@ -129,6 +146,27 @@ void Emulate8080Op(State8080* state) {
             state->cc.cy = (answer > 0xff); // cy if carry
             state->cc.p = Parity(answer & 0xff); // p if Parity
             state->a = answer & 0xff; // store 8 bit result
+            break;
+        }
+        case 0xc9: {    // RET
+            // Get the 2 bytes off the stack and stuff them into PC
+            state->pc = state->memory[state->sp] | (state->memory[state->sp+1] << 8);
+            // bump the stack pointer
+            state->sp += 2;
+            break;
+        }
+        case 0xcd: {    // CALL address
+            uint16_t ret = state->pc+2; // return address should be the next instruction after this one
+            // push the return address onto the stack
+            // The stack is just a section of memory where SP is pointing
+            // take the high byte and put it in memory[sp-1]
+            state->memory[state->sp-1] = (ret >> 8) & 0xff;
+            // take the low byte and put it in memory[sp-2]
+            state->memory[state->sp-2] = (ret & 0xff);
+            // move the stack pointer down since we just pushed it
+            state->sp = state->sp - 2;
+            // now update pc to the address in the CALL
+            state->pc = (opcode[2] << 8) | opcode[1];
             break;
         }
         case 0xfe:  UnimplementedInstruction(state); break;
