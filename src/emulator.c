@@ -155,6 +155,14 @@ void Emulate8080Op(State8080* state) {
             state->a = answer & 0xff;
             break;
         }
+        case 0xc1: {    //POP B
+            // pulls C and B off the stack
+            state->c = state->memory[state->sp];
+            state->b = state->memory[state->sp+1];
+            // increments the stack pointer
+            state->sp += 2;
+            break;
+        }
         case 0xc2: {    // JNZ Address - jump to 16 bit address if not zero
             if (0 == state->cc.z) {
                 // Remember, high byte is opcode[2] and low byte is opcode[1]
@@ -170,6 +178,12 @@ void Emulate8080Op(State8080* state) {
         case 0xc3: {    //JMP address
             // Unconditional, so we just update the pc and don't need to +2 the pc
             state->pc = (opcode[2] << 8) | opcode[1];
+            break;
+        }
+        case 0xc5: {    //PUSH B
+            state->memory[state->sp - 1] = state->b;
+            state->memory[state->sp - 2] = state->c;
+            state->sp -= 2;
             break;
         }
         case 0xc6: {     //ADI byte
@@ -227,9 +241,34 @@ void Emulate8080Op(State8080* state) {
 
             break;
         }
+        case 0xf1: {    // POP PSW
+            // Accumulator and the flags
+            state->a = state->memory[state->sp + 1];
+            uint8_t psw = state->memory[state->sp];
+            // these flags are individual bits here
+            state->cc.z = (0x01 == (psw & 0x01));
+            state->cc.s  = (0x02 == (psw & 0x02));
+            state->cc.p  = (0x04 == (psw & 0x04));
+            state->cc.cy = (0x05 == (psw & 0x08));
+            state->cc.ac = (0x10 == (psw & 0x10));
+            state->sp += 2;
+            break;
+        }
         case 0xf3:  // DI (Disable interrupts)
             state->int_enable = 0;
             break;
+        case 0xf5: { // PUSH PSW
+            // Accumulator and the flags
+            state->memory[state->sp - 1] = state->a;
+            uint8_t psw = (state->cc.z |
+                           state->cc.s << 1 |
+                           state->cc.p << 2 |
+                           state->cc.cy << 3 |
+                           state->cc.ac << 4 );
+            state->memory[state->sp - 2] = psw;
+            state->sp -= 2;
+            break;
+        }
         case 0xfb:  // EI (enable interrupts)
             state->int_enable = 1;
             break;

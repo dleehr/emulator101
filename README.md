@@ -59,6 +59,8 @@ frame variable --format x *code
 (unsigned char) *code = 0xc3
 ```
 
+formatting numbers as 2s complement
+
 ## disassembling 2
 
 The first instructions match what we hand assembled before. After that, you can see some new instructions. I pasted the hex data in below for reference. Notice that if you compare the memory with the instructions, it looks like the addresses are stored backward in memory. They are. This is called little endian - little endian machines like the 8080 store the smaller bytes of numbers in memory first. (See below for more on endian-ness)
@@ -78,4 +80,26 @@ Depending on the processor, bytes are stored differently in memory, and the stor
 Little endian: $DD $CC $BB $AA
 
 Big endian: $AA $BB $CC $DD
+
+## Stack operations
+
+Add for popping, subtract for pushing. stack grows down.
+And we push the second letter first.
+
+POP B (and C):
+
+```
+state->c = state->memory[state->sp];
+state->b = state->memory[state->sp+1];
+state->sp += 2;
+```
+
+
+PUSH B (and C):
+
+```
+state->memory[state->sp-1] = state->b;
+state->memory[state->sp-2] = state->c;
+state->sp = state->sp - 2;
+```
 
