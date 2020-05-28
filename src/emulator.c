@@ -82,6 +82,12 @@ void Emulate8080Op(State8080* state) {
             // Complement A
             state->a = ~state->a;
             break;
+        case 0x37:  // STC (set carry)
+            state->cc.cy = 1;
+            break;
+        case 0x3f:  // CMC (complement carry)
+            state->cc.cy = ~state->cc.cy;
+            break;
         case 0x41:  //MOV B,C
             state->b = state->c;
             break;
