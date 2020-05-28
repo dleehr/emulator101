@@ -37,6 +37,10 @@ uint8_t Parity(uint8_t value) {
     return 0;
 }
 
+uint8_t parity(uint8_t value, uint8_t other) {
+    return 0;
+}
+
 void Emulate8080Op(State8080* state) {
     // pull the opcode.
     // state is a pointer to the state struct, so state->pc is the value of the pc
@@ -57,6 +61,27 @@ void Emulate8080Op(State8080* state) {
         case 0x03:  UnimplementedInstruction(state); break;
         case 0x04:  UnimplementedInstruction(state); break;
         /* ... */
+        case 0x0f: { //RRC
+            // Rotate A right - affects carry but does not pull from it
+            // First get A out of state
+            uint8_t x = state->a;
+            // The lowest bit (x & 1) gets rotated all the way around
+            // to the highesst bit (<<7), and then ORed with x shifted right
+            state->a = ((x & 1) << 7) | (x >> 1);
+            // Finally, set carry to that bit that was rotated
+            state->cc.cy = (1 == (x&1));
+        }
+        case 0x1f: { //RAR
+            // Rotate A Right through carry
+            // first get A out of state
+            uint8_t x = state->a;
+            state->a = (state->cc.cy << 7) | (x >> 1);
+            state->cc.cy = (1 == (x&1));
+        }
+        case 0x2f:  //CMA (not)
+            // Complement A
+            state->a = ~state->a;
+            break;
         case 0x41:  //MOV B,C
             state->b = state->c;
             break;
@@ -169,7 +194,31 @@ void Emulate8080Op(State8080* state) {
             state->pc = (opcode[2] << 8) | opcode[1];
             break;
         }
-        case 0xfe:  UnimplementedInstruction(state); break;
+        case 0xe6: {    //ANI    byte
+            // AND immediate value with a byte
+            uint8_t x = state->a & opcode[1];
+            // now set flags.
+            state->cc.z = (x == 0); // z if result was zero
+            state->cc.s = (0x80 == (x & 0x80)); // this  is different than previous
+            state->cc.cy = 0; //Data book says ANI clears CY
+            state->cc.p = parity(x, 8);
+            state->a = x;
+            state->pc++;    // for the data byte
+
+            break;
+        }
+        case 0xfe: {    //CPI  byte
+            // Compare immediate with byte
+            // To compare we just subtract and then consider x
+            uint8_t x = state->a - opcode[1];
+            state->cc.z = (x == 0);
+            state->cc.s = (0x80 == (x & 0x80));
+            //It isn't clear in the data book what to do with p - had to pick
+            state->cc.p = parity(x, 8);
+            state->cc.cy = (state->a < opcode[1]);
+            state->pc++;
+            break;
+        }
         case 0xff:  UnimplementedInstruction(state); break;
     }
     state->pc += 1; // increment by one to account for the opcode byte
