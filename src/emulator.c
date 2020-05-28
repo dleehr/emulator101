@@ -213,6 +213,12 @@ void Emulate8080Op(State8080* state) {
 
             break;
         }
+        case 0xf3:  // DI (Disable interrupts)
+            state->int_enable = 0;
+            break;
+        case 0xfb:  // EI (enable interrupts)
+            state->int_enable = 1;
+            break;
         case 0xfe: {    //CPI  byte
             // Compare immediate with byte
             // To compare we just subtract and then consider x
