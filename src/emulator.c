@@ -97,6 +97,9 @@ void Emulate8080Op(State8080* state) {
         case 0x43:  //MOV B,E
             state->b = state->e;
             break;
+        case 0x76:  // HLT
+            exit(0);
+            break;
         case 0x80:  { //ADD B
             // do the math with higher precision so we can capture the carry out
             uint16_t answer = (uint16_t) state->a + (uint16_t) state->b;
@@ -177,6 +180,7 @@ void Emulate8080Op(State8080* state) {
             state->cc.cy = (answer > 0xff); // cy if carry
             state->cc.p = Parity(answer & 0xff); // p if Parity
             state->a = answer & 0xff; // store 8 bit result
+            state->pc++;
             break;
         }
         case 0xc9: {    // RET
@@ -198,6 +202,16 @@ void Emulate8080Op(State8080* state) {
             state->sp = state->sp - 2;
             // now update pc to the address in the CALL
             state->pc = (opcode[2] << 8) | opcode[1];
+            break;
+        }
+        case 0xd3: {    // OUT byte
+            // output
+            state->pc++;
+            break;
+        }
+        case 0xdb: {    // IN byte
+            // I assume this is input
+            state->pc++;
             break;
         }
         case 0xe6: {    //ANI    byte
