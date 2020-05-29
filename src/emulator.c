@@ -26,9 +26,28 @@ typedef struct State8080 {
     uint8_t     int_enable;
 } State8080;
 
+State8080* Init8080(void)
+{
+    State8080* state = calloc(1,sizeof(State8080));
+    state->memory = malloc(0x10000);  //16K
+    return state;
+}
+
+void Destroy8080(State8080 *state) {
+    if(state == NULL) {
+        return;
+    }
+    free(state->memory);
+    state->memory = NULL;
+    free(state);
+}
+
 void UnimplementedInstruction(State8080* state) {
     // pc will have advanced one, so undo that
-    printf("Error: unimplemented instruction\n");
+    uint8_t opcode = state->memory[state->pc - 1];
+    printf("Error: unimplemented instruction [0x%02x]\n", opcode);
+    Destroy8080(state);
+    state = NULL;
     exit(1);
 }
 
@@ -48,7 +67,7 @@ uint8_t parity(int x, int size) {
 int Disassemble8080Op(unsigned char *codebuffer, int pc)   {
     unsigned char *code = &codebuffer[pc];
     int opbytes = 1;
-    printf ("%04x ", pc);
+    printf ("%04x [0x%02x] ", pc, code[0]);
     switch (*code)
     {
         case 0x00: printf("NOP"); break;
@@ -323,7 +342,7 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)   {
         case 0xfe: printf("CPI    #$%02x",code[1]); opbytes = 2; break;
         case 0xff: printf("RST    7"); break;
     }
-
+    printf("\n");
     return opbytes;
 }
 
@@ -388,7 +407,7 @@ int Emulate8080Op(State8080* state) {
             state->b = state->e;
             break;
         case 0x76:  // HLT
-            exit(0);
+            return 1;
             break;
         case 0x80:  { //ADD B
             // do the math with higher precision so we can capture the carry out
@@ -585,18 +604,6 @@ int Emulate8080Op(State8080* state) {
     return 0;
 }
 
-State8080* Init8080(void)
-{
-    State8080* state = calloc(1,sizeof(State8080));
-    state->memory = malloc(0x10000);  //16K
-    return state;
-}
-
-void Destroy8080(State8080 *state) {
-    free(state->memory);
-    state->memory = NULL;
-    free(state);
-}
 
 int main(int argc, char * argv[]) {
     FILE *f = fopen(argv[1], "rb");
@@ -620,5 +627,6 @@ int main(int argc, char * argv[]) {
         done = Emulate8080Op(state);
     }
     Destroy8080(state);
+    state = NULL;
     return 0;
 }
