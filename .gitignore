@@ -1,2 +1,4 @@
 bin
 venv
+emulator/emulator.xcodeproj/xcuserdata/*
+emulator/emulator.xcodeproj/project.xcworkspace/xcuserdata/*
