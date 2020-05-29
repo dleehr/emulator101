@@ -32,13 +32,17 @@ void UnimplementedInstruction(State8080* state) {
     exit(1);
 }
 
-uint8_t Parity(uint8_t value) {
-    // TODO: Implement this
-    return 0;
-}
-
-uint8_t parity(uint8_t value, uint8_t other) {
-    return 0;
+uint8_t parity(int x, int size) {
+    int i;
+    int p = 0;
+    x = (x & ((1<<size)-1));
+    // examine each bit in x, to determine if even or odd parity
+    for (i=0; i<size; i++)
+    {
+        if (x & 0x1) p++;
+        x = x >> 1;
+    }
+    return (0 == (p & 0x1));
 }
 
 int Disassemble8080Op(unsigned char *codebuffer, int pc)   {
@@ -320,19 +324,20 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)   {
         case 0xff: printf("RST    7"); break;
     }
 
-    printf("\n");
-
     return opbytes;
 }
 
 
-void Emulate8080Op(State8080* state) {
+int Emulate8080Op(State8080* state) {
     // pull the opcode.
     // state is a pointer to the state struct, so state->pc is the value of the pc
     // state->memory[state->pc] is the value of the byte where the pc is pointing
     // so we & it to get the address, and then assigne it to a char*
     // Could we drop the * and the &?
     unsigned char *opcode = &state->memory[state->pc];
+    Disassemble8080Op(state->memory, state->pc);
+    state->pc += 1; // increment by one to account for the opcode byte
+    // operand bytes will be incremented in the switch
 
     switch(*opcode) {
         case 0x00: // NOP
@@ -410,7 +415,7 @@ void Emulate8080Op(State8080* state) {
                 state->cc.cy = 0;
             }
             // Parity handled by subroutine
-            state->cc.p = Parity( answer & 0xff);
+            state->cc.p = parity( answer & 0xff, 8);
 
             // Remember, we have to put the result in a single byte
             state->a = answer & 0xff;
@@ -422,7 +427,7 @@ void Emulate8080Op(State8080* state) {
             state->cc.z = ((answer & 0xff) == 0); // z if result was zero
             state->cc.s = ((answer & 0x80) != 0); // s if sign bit
             state->cc.cy = (answer > 0xff); // cy if carry
-            state->cc.p = Parity(answer & 0xff); // p if Parity
+            state->cc.p = parity(answer & 0xff, 8); // p if Parity
             state->a = answer & 0xff; // store 8 bit result
             break;
         }
@@ -436,7 +441,7 @@ void Emulate8080Op(State8080* state) {
             state->cc.z = ((answer & 0xff) == 0);
             state->cc.s = ((answer & 0x80) != 0);
             state->cc.cy = (answer > 0xff);
-            state->cc.p = Parity(answer & 0xff);
+            state->cc.p = parity(answer & 0xff, 8);
             state->a = answer & 0xff;
             break;
         }
@@ -477,7 +482,7 @@ void Emulate8080Op(State8080* state) {
             state->cc.z = ((answer & 0xff) == 0); // z if result was zero
             state->cc.s = ((answer & 0x80) != 0); // s if sign bit
             state->cc.cy = (answer > 0xff); // cy if carry
-            state->cc.p = Parity(answer & 0xff); // p if Parity
+            state->cc.p = parity(answer & 0xff, 8); // p if Parity
             state->a = answer & 0xff; // store 8 bit result
             state->pc++;
             break;
@@ -569,9 +574,28 @@ void Emulate8080Op(State8080* state) {
             state->pc++;
             break;
         }
-        case 0xff:  UnimplementedInstruction(state); break;
+        default:    UnimplementedInstruction(state); break;
     }
-    state->pc += 1; // increment by one to account for the opcode byte
+    // print out processor state
+    printf("\tC=%d,P=%d,S=%d,Z=%d\n", state->cc.cy, state->cc.p,
+        state->cc.s, state->cc.z);
+    printf("\tA $%02x B $%02x C $%02x D $%02x E $%02x H $%02x L $%02x SP %04x\n",
+        state->a, state->b, state->c, state->d,
+        state->e, state->h, state->l, state->sp);
+    return 0;
+}
+
+State8080* Init8080(void)
+{
+    State8080* state = calloc(1,sizeof(State8080));
+    state->memory = malloc(0x10000);  //16K
+    return state;
+}
+
+void Destroy8080(State8080 *state) {
+    free(state->memory);
+    state->memory = NULL;
+    free(state);
 }
 
 int main(int argc, char * argv[]) {
@@ -585,19 +609,16 @@ int main(int argc, char * argv[]) {
     fseek(f, 0L, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0L, SEEK_SET);
-
-    unsigned char *buffer=malloc(fsize);
-
-    fread(buffer, fsize, 1, f);
+    State8080 *state = Init8080();
+    fread(state->memory, fsize, 1, f);
     fclose(f);
 
-    int pc = 0;
     f = NULL;
 
-    while (pc < fsize)
-    {
-        pc += Disassemble8080Op(buffer, pc);
+    int done = 0;
+    while (done == 0) {
+        done = Emulate8080Op(state);
     }
-    free(buffer);
+    Destroy8080(state);
     return 0;
 }
