@@ -366,10 +366,6 @@ int Emulate8080Op(State8080* state) {
             state->b = opcode[2];   // Due to endianness, c <- 1, b <- 2
             state->pc += 2; //increment by 2 because of 2 byte direct value
             break;
-        case 0x02:  UnimplementedInstruction(state); break;
-        case 0x03:  UnimplementedInstruction(state); break;
-        case 0x04:  UnimplementedInstruction(state); break;
-        /* ... */
         case 0x0f: { //RRC
             // Rotate A right - affects carry but does not pull from it
             // First get A out of state
@@ -390,6 +386,10 @@ int Emulate8080Op(State8080* state) {
         case 0x2f:  //CMA (not)
             // Complement A
             state->a = ~state->a;
+            break;
+        case 0x31: // LXI    SP, D16
+            state->sp = (opcode[2] << 8) | opcode[1];
+            state->pc += 2;
             break;
         case 0x37:  // STC (set carry)
             state->cc.cy = 1;
@@ -593,7 +593,8 @@ int Emulate8080Op(State8080* state) {
             state->pc++;
             break;
         }
-        default:    UnimplementedInstruction(state); break;
+        default:
+            UnimplementedInstruction(state); break;
     }
     // print out processor state
     printf("\tC=%d,P=%d,S=%d,Z=%d\n", state->cc.cy, state->cc.p,
