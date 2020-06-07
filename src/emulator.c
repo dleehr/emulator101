@@ -366,6 +366,22 @@ int Emulate8080Op(State8080* state) {
             state->b = opcode[2];   // Due to endianness, c <- 1, b <- 2
             state->pc += 2; //increment by 2 because of 2 byte direct value
             break;
+        case 0x06:  // MVI    B,D8
+            state->b = opcode[1];
+            state->pc += 1;
+            break;
+        case 0x11:  // LXI  D, D16
+            state->e = opcode[1];
+            state->d = opcode[2];
+            state->pc += 2;
+            break;
+        case 0x13:  {// INX    D
+            uint16_t de = (state->d<<8) | (state->e);
+            de++;
+            state->d = (de >> 8) & 0xff;
+            state->e = de & 0xff;
+            break;
+        }
         case 0x0f: { //RRC
             // Rotate A right - affects carry but does not pull from it
             // First get A out of state
@@ -375,6 +391,11 @@ int Emulate8080Op(State8080* state) {
             state->a = ((x & 1) << 7) | (x >> 1);
             // Finally, set carry to that bit that was rotated
             state->cc.cy = (1 == (x&1));
+            break;
+        }
+        case 0x1a: {    // LDAX D
+            state->a = state->d;
+            break;
         }
         case 0x1f: { //RAR
             // Rotate A Right through carry
@@ -382,6 +403,21 @@ int Emulate8080Op(State8080* state) {
             uint8_t x = state->a;
             state->a = (state->cc.cy << 7) | (x >> 1);
             state->cc.cy = (1 == (x&1));
+            break;
+        }
+        case 0x21: { // LXI H, D16
+            state->l = opcode[1];
+            state->h = opcode[2];
+            state->pc += 2;
+            break;
+        }
+        case 0x23: { // INX    H
+            // HL <- HL + 1
+            uint16_t hl = (state->h<<8) | (state->l);
+            hl++;
+            state->h = (hl >> 8) & 0xff;
+            state->l = hl & 0xff;
+            break;
         }
         case 0x2f:  //CMA (not)
             // Complement A
@@ -409,6 +445,12 @@ int Emulate8080Op(State8080* state) {
         case 0x76:  // HLT
             return 1;
             break;
+        case 0x77: { // MOV    M,A
+            // (HL) <- A
+            uint16_t addr = (state->h << 8) | state->l;
+            state->memory[addr] = state->a;
+            break;
+        }
         case 0x80:  { //ADD B
             // do the math with higher precision so we can capture the carry out
             uint16_t answer = (uint16_t) state->a + (uint16_t) state->b;
